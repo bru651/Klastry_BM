@@ -8,35 +8,46 @@
 
 
 
-bool checkNeigbours(std::vector<std::vector<int>> const &oilNew,int x, int y) {
+bool checkNeigbours(std::vector<std::vector<int>> const &oilNew,int x, int y, int threshold) {
     int size = oilNew.size();
-    //std::vector<sf::Vector2i> neighs;
-    std::vector<sf::Vector2i> borders{ sf::Vector2i (0, 1),sf::Vector2i(0, -1),sf::Vector2i(-1, 0),sf::Vector2i(1, 0) };
+    int neighs = 0;
+    bool even = 0;
+    if (y % 2 == 0)even = 1;
+    std::vector<sf::Vector2i> borders;
+    if (even)borders = { sf::Vector2i(0, 1), sf::Vector2i(0, -1), sf::Vector2i(-1, 0), sf::Vector2i(1, 0), sf::Vector2i(1, 1), sf::Vector2i(1, -1) };
+    else borders = { sf::Vector2i(0, 1), sf::Vector2i(0, -1), sf::Vector2i(-1, 0), sf::Vector2i(1, 0), sf::Vector2i(-1, 1), sf::Vector2i(-1, -1) };
     int rnx, rny;
-    for (int n = 0; n < 4; n++) {
+    for (int n = 0; n < 6; n++) {
         rnx = x + borders[n].x; rny = y + borders[n].y;
         if (rnx  < 0 || rny < 0 || rnx > size - 1 || rny > size - 1) continue;
         else {
-            if (oilNew[rnx][rny]!=1)continue;
-            else return 1;
+            if (oilNew[rnx][rny] != 1)continue;
+            else neighs += 1;
         }
     }
-    return 0;
+    if (neighs == threshold)return 1;
+    else return 0;
 }
 
-void StainUpdate(std::vector<std::vector<int>>& oilNew) {
+void StainUpdate(std::vector<std::vector<int>>& oilNew, int threshold) {
     int size = oilNew.size();   // Za³o¿enie ¿e tablica ma kszta³t kwadratu
+    if (threshold == 0)threshold = 1 + rand() % 3;
     std::vector<sf::Vector2i> neighbours{ sf::Vector2i(0, 1),sf::Vector2i(0, -1),sf::Vector2i(-1, 0),sf::Vector2i(1, 0)};
-    sf::Vector2i move;
-    int rnx, rny;
-
-    //std::cout << "CHECK 8" << std::endl;
     // Zamieñ 2(Nowe) na 1(Istniej¹ce)
     for (int x = 0; x < size; x++) {
         for (int y = 0; y < size; y++) {
             if (oilNew[x][y] > 1)oilNew[x][y] = 1;
         }
     }
+    for (int x = 0; x < size; x++) {
+        for (int y = 0; y < size; y++) {
+            if (oilNew[x][y] != 1) {
+                if (checkNeigbours(oilNew, x, y, threshold)) oilNew[x][y] = 2;
+            }
+        }
+    }
+    //std::cout << "CHECK 8" << std::endl;
+
     //std::cout << "CHECK 9" << std::endl;
 }
 
@@ -47,21 +58,37 @@ int main()
     // Ustawienia
     int displaySize = 800;
     bool pause = true;
-    int iterations = 100000;     // Iloœæ iteracji
+    int iterations = 90;     // Iloœæ iteracji
     int curIteration = 1;     // Obecna iteracja
     //int probability = 500;  // Od 0 do 1000
     bool display = true; // Czy ma rysowaæ gry
     int size = 200;     // Wymiar tablicy
     int space = size * size;
     float blocksize = static_cast<float>(displaySize) / size;  // Graficzna wielkoœæ pola
+    float shift = blocksize * 0.25f;    // Przesuniêcie bloków dla hexagonalnoœci
+    bool even = true;  // Pilnuje hexagonalnoœæ rusowania tablicy
+    bool slowmode = false;   // Czy spacja to pauza czy jeden krok
+    int threshold = 0; // Ilu musi byæ s¹siadów do rozrostu p³atka
 
     // Zbiorniki
     //std::vector<std::vector<bool>> oil(size, std::vector<bool>(size, false));
     std::vector<std::vector<int>> oilNew(size, std::vector<int>(size, 0));
-    oilNew[size / 2][size / 2] = 1;
+    sf::Vector2i center = sf::Vector2i(size / 2, size / 2);
+    //oilNew[center.x ][center.y] = 1;
+    oilNew[center.x+1][center.y] = 1;
+    oilNew[center.x][center.y+1] = 1;
+    oilNew[center.x+1][center.y+1] = 1;
+    oilNew[center.x-1][center.y] = 1;
+    oilNew[center.x][center.y-1] = 1;
+    oilNew[center.x+1][center.y-1] = 1;
+
+    oilNew[center.x+2][center.y] = 1;
+    oilNew[center.x-2][center.y] = 1;
+    oilNew[center.x][center.y+2] = 1;
+    oilNew[center.x][center.y-2] = 1;
 
     // Grafika
-    sf::RenderWindow window(sf::VideoMode(displaySize, displaySize), "KLastr DLA");
+    sf::RenderWindow window(sf::VideoMode(displaySize, displaySize), "Snowflake");
     //window.setFramerateLimit(30);
     sf::RectangleShape shape(sf::Vector2f(blocksize, blocksize));
     shape.setFillColor(sf::Color::Green);
@@ -84,6 +111,9 @@ int main()
                 if (event.key.code == sf::Keyboard::R) {    // Iloœæ iteracji
                     display = !display;
                 }
+                if (event.key.code == sf::Keyboard::T) {    // Czy spacja to pauza czy jeden krok
+                    slowmode = !slowmode;
+                }
                 if (event.key.code == sf::Keyboard::I) {    // Iloœæ kroków
                     std::cout << "Kroki: "<< curIteration << " / " << iterations << std::endl;
                 }
@@ -91,8 +121,8 @@ int main()
         }
         if (!pause) {
             curIteration += 1;
-            StainUpdate(oilNew);
-            //pause = true;
+            StainUpdate(oilNew, threshold);
+            if(slowmode)pause = true;
         }
         if (iterations == curIteration) {
                 pause = true;
@@ -103,14 +133,18 @@ int main()
 
         if (display) {
             window.clear();
-            shape.setFillColor(sf::Color::Red);
+            shape.setFillColor(sf::Color::White);
             // Rysuje Klastr
-            for (int x = 0; x < size; x++) {
-                for (int y = 0; y < size; y++) {
+            for (int y = 0; y < size; y++) {
+                even = !even;
+                if (y == 0)even = true;
+                for (int x = 0; x < size; x++) {
                     if (oilNew[x][y] > 0) {
-                        
+                        if (oilNew[x][y] > 1) shape.setFillColor(sf::Color::Blue);
+                        else shape.setFillColor(sf::Color::White);
                         //std::cout << "X: "<< x<<" Y: "<<y << std::endl;
-                        shape.setPosition(sf::Vector2f(blocksize * x, blocksize * y));
+                        if(even) shape.setPosition(sf::Vector2f(blocksize * x + shift, blocksize * y));
+                        else shape.setPosition(sf::Vector2f(blocksize * x - shift, blocksize * y));
                         window.draw(shape);
                         
                     }
