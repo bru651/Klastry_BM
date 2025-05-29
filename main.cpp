@@ -56,13 +56,6 @@ void StainUpdate(std::vector<std::vector<int>>& oilNew, std::vector<sf::Vector2i
         if (rnx  < 0 || rny < 0 || rnx > size - 1 || rny > size - 1) continue;
         //std::cout << "CHECK 4" << std::endl;
         particles[i] = sf::Vector2i(rnx, rny);  // Ruch
-        //std::cout << "CHECK 5" << std::endl;
-        if (checkNeigbours(oilNew, particles[i].x, particles[i].y)) {// SprawdŸ czy styka
-            //std::cout << "CHECK 6" << std::endl;
-            if (oilNew[particles[i].x][particles[i].y] != 1)oilNew[particles[i].x][particles[i].y] = 2;
-            //std::cout << "CHECK 7" << std::endl;
-            particles[i] = GetEdgePos(size);
-        }
     }
     //std::cout << "CHECK 8" << std::endl;
     // Zamieñ 2(Nowe) na 1(Istniej¹ce)
@@ -81,7 +74,7 @@ int main()
     // Ustawienia
     int displaySize = 800;
     bool pause = true;
-    int iterations = 250000;     // Iloœæ iteracji
+    int iterations = 100000;     // Iloœæ iteracji
     int curIteration = 1;     // Obecna iteracja
     //int probability = 500;  // Od 0 do 1000
     bool display = true; // Czy ma rysowaæ gry
