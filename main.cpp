@@ -5,6 +5,7 @@
 //#include <cmath>
 #include <ctime>
 #include <iostream>
+#include <fstream>
 std::vector<sf::Vector2i> checkNeigbours(std::vector<std::vector<int>> const &oilNew,int x, int y) {
     int size = oilNew.size();
     std::vector<sf::Vector2i> neighs;
@@ -71,6 +72,34 @@ int SurfaceCount(std::vector<std::vector<int>> const& oilNew) {
     return pass;
 }
 
+float GetRadius(std::vector<std::vector<int>> const& oilNew) {
+    int size = oilNew.size();
+    int total = 0;
+    sf::Vector2i distanceSum = sf::Vector2i(0, 0);
+    for (int x = 0; x < size; x++) {
+        for (int y = 0; y < size; y++) {
+            if (oilNew[x][y] > 0) {
+                distanceSum.x += x;
+                distanceSum.y += y;
+                total += 1;
+            }
+        }
+    }
+    float totalf = static_cast<float>(total);
+    sf::Vector2f centerOfMass = sf::Vector2f(static_cast<float>(distanceSum.x)/totalf, static_cast<float>(distanceSum.y)/totalf);
+    float radius = 0;
+    float distance;
+    for (int x = 0; x < size; x++) {
+        for (int y = 0; y < size; y++) {
+            if (oilNew[x][y] == 1) {
+                distance = std::hypot(centerOfMass.x - static_cast<float>(x), centerOfMass.y - static_cast<float>(y));
+                if (distance > radius)radius = distance;
+            }
+        }
+    }
+
+    return radius;
+}
 
 int main()
 {
@@ -88,6 +117,7 @@ int main()
 
     // Zbiorniki
     int surface = 1;
+    std::vector<float> radiuses;
     //std::vector<std::vector<bool>> oil(size, std::vector<bool>(size, false));
     std::vector<std::vector<int>> oilNew(size, std::vector<int>(size, 0));
     oilNew[size / 2][size / 2] = 1;
@@ -122,11 +152,26 @@ int main()
             curIteration += 1;
             StainUpdate(oilNew, surface);
             surface = SurfaceCount(oilNew);
+            radiuses.push_back(GetRadius(oilNew));
         }
         if (iterations == curIteration) {
                 pause = true;
                 std::cout << "DONE" << std::endl;
+                std::cout << "Radius: "<< radiuses[radiuses.size()-1] << std::endl;
                 iterations = -1;
+
+                std::ofstream file("data1.csv");
+                if (file.is_open()) {
+                    for (const auto& value : radiuses) {
+                        file << value << "\n";
+                    }
+                    file.close();
+                    std::cout << "Data saved to data.csv" << std::endl;
+                }
+                else {
+                    std::cerr << "Unable to open file" << std::endl;
+                }
+
                 //window.close();//*/
         }
 
