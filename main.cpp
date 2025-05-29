@@ -5,6 +5,7 @@
 //#include <cmath>
 #include <ctime>
 #include <iostream>
+#include <fstream>
 
 sf::Vector2i GetEdgePos(int size) {
     int r = rand() % 4;
@@ -38,8 +39,9 @@ bool checkNeigbours(std::vector<std::vector<int>> const &oilNew,int x, int y) {
     return 0;
 }
 
-void StainUpdate(std::vector<std::vector<int>>& oilNew, std::vector<sf::Vector2i>& particles) {
+bool StainUpdate(std::vector<std::vector<int>>& oilNew, std::vector<sf::Vector2i>& particles) {
     int size = oilNew.size();   // Za³o¿enie ¿e tablica ma kszta³t kwadratu
+    bool result = false;
     std::vector<sf::Vector2i> neighbours{ sf::Vector2i(0, 1),sf::Vector2i(0, -1),sf::Vector2i(-1, 0),sf::Vector2i(1, 0)};
     sf::Vector2i move;
     int rnx, rny;
@@ -61,12 +63,57 @@ void StainUpdate(std::vector<std::vector<int>>& oilNew, std::vector<sf::Vector2i
     // Zamieñ 2(Nowe) na 1(Istniej¹ce)
     for (int x = 0; x < size; x++) {
         for (int y = 0; y < size; y++) {
-            if (oilNew[x][y] > 1)oilNew[x][y] = 1;
+            if (oilNew[x][y] > 1) { 
+                oilNew[x][y] = 1;
+                result = true;
+            }
         }
     }
-    //std::cout << "CHECK 9" << std::endl;
+    return result;
 }
 
+float GetRadius(std::vector<std::vector<int>> const& oilNew) {
+    int size = oilNew.size();
+    int total = 0;
+    sf::Vector2i distanceSum = sf::Vector2i(0, 0);
+    for (int x = 0; x < size; x++) {
+        for (int y = 0; y < size; y++) {
+            if (oilNew[x][y] > 0) {
+                distanceSum.x += x;
+                distanceSum.y += y;
+                total += 1;
+            }
+        }
+    }
+    float totalf = static_cast<float>(total);
+    sf::Vector2f centerOfMass = sf::Vector2f(static_cast<float>(distanceSum.x) / totalf, static_cast<float>(distanceSum.y) / totalf);
+    float radius = 0;
+    float distance;
+    for (int x = 0; x < size; x++) {
+        for (int y = 0; y < size; y++) {
+            if (oilNew[x][y] > 0) {
+                distance = std::hypot(centerOfMass.x - static_cast<float>(x), centerOfMass.y - static_cast<float>(y));
+                if (distance > radius)radius = distance;
+            }
+        }
+    }
+
+    return radius;
+}
+
+int GetParticles(std::vector<std::vector<int>> const& oilNew) {
+    int size = oilNew.size();
+    int total = 0;
+    for (int x = 0; x < size; x++) {
+        for (int y = 0; y < size; y++) {
+            if (oilNew[x][y] > 0) {
+
+                total += 1;
+            }
+        }
+    }
+    return total;
+}
 
 int main()
 {
@@ -90,6 +137,8 @@ int main()
     }
     std::vector<std::vector<int>> oilNew(size, std::vector<int>(size, 0));
     oilNew[size / 2][size / 2] = 1;
+    std::vector<float> radiuses;
+    std::vector<int> pCount;
 
     // Grafika
     sf::RenderWindow window(sf::VideoMode(displaySize, displaySize), "KLastr DLA");
@@ -122,13 +171,32 @@ int main()
         }
         if (!pause) {
             curIteration += 1;
-            StainUpdate(oilNew,particles);
+            if (StainUpdate(oilNew, particles)) {
+                radiuses.push_back(GetRadius(oilNew));
+                pCount.push_back(GetParticles(oilNew));
+            }
+            
             //pause = true;
         }
         if (iterations == curIteration) {
                 pause = true;
                 std::cout << "DONE" << std::endl;
+                std::cout << "Radius: " << radiuses[radiuses.size() - 1] << std::endl;
+                std::cout << "Particles: " << pCount[pCount.size() - 1] << std::endl;
                 iterations = -1;
+                ///*
+                std::ofstream file("data2f.csv");
+                if (file.is_open()) {
+                    for (size_t i = 0; i < pCount.size(); ++i) {
+                        file << pCount[i] << "," << radiuses[i] << "\n";
+                    }
+                    file.close();
+                    std::cout << "Data saved to data.csv" << std::endl;
+                }
+                else {
+                    std::cerr << "Unable to open file" << std::endl;
+                }
+                //*/
                 //window.close();//*/
         }
 
