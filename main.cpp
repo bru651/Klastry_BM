@@ -6,28 +6,14 @@
 #include <ctime>
 #include <iostream>
 
-sf::Vector2i GetEdgePos(int size) {
-    int r = rand() % 4;
-    if (r == 0) {
-        return sf::Vector2i(0, rand() % size);
-    }
-    else if (r == 1) {
-        return sf::Vector2i(size - 1, rand() % size);
-    }
-    else if (r == 2) {
-        return sf::Vector2i(rand() % size, 0);
-    }
-    else if (r == 3) {
-        return sf::Vector2i(rand() % size, size - 1);
-    }
-}
+
 
 bool checkNeigbours(std::vector<std::vector<int>> const &oilNew,int x, int y) {
     int size = oilNew.size();
     //std::vector<sf::Vector2i> neighs;
-    std::vector<sf::Vector2i> borders{ sf::Vector2i(0, 0), sf::Vector2i (0, 1),sf::Vector2i(0, -1),sf::Vector2i(-1, 0),sf::Vector2i(1, 0) };
+    std::vector<sf::Vector2i> borders{ sf::Vector2i (0, 1),sf::Vector2i(0, -1),sf::Vector2i(-1, 0),sf::Vector2i(1, 0) };
     int rnx, rny;
-    for (int n = 0; n < 5; n++) {
+    for (int n = 0; n < 4; n++) {
         rnx = x + borders[n].x; rny = y + borders[n].y;
         if (rnx  < 0 || rny < 0 || rnx > size - 1 || rny > size - 1) continue;
         else {
@@ -38,25 +24,12 @@ bool checkNeigbours(std::vector<std::vector<int>> const &oilNew,int x, int y) {
     return 0;
 }
 
-void StainUpdate(std::vector<std::vector<int>>& oilNew, std::vector<sf::Vector2i>& particles) {
+void StainUpdate(std::vector<std::vector<int>>& oilNew) {
     int size = oilNew.size();   // Za³o¿enie ¿e tablica ma kszta³t kwadratu
     std::vector<sf::Vector2i> neighbours{ sf::Vector2i(0, 1),sf::Vector2i(0, -1),sf::Vector2i(-1, 0),sf::Vector2i(1, 0)};
     sf::Vector2i move;
     int rnx, rny;
-    for (int i = 0; i < particles.size(); i++) {
-        //std::cout << "CHECK 1" << std::endl;
-        if (checkNeigbours(oilNew, particles[i].x, particles[i].y)) {// SprawdŸ czy styka
-            //std::cout << "CHECK 2" << std::endl;
-            if (oilNew[particles[i].x][particles[i].y] != 1)oilNew[particles[i].x][particles[i].y] = 2;
-            //std::cout << "CHECK 3" << std::endl;
-            particles[i] = GetEdgePos(size);
-        }
-        move = neighbours[rand()%4];
-        rnx = particles[i].x + move.x; rny = particles[i].y + move.y;
-        if (rnx  < 0 || rny < 0 || rnx > size - 1 || rny > size - 1) continue;
-        //std::cout << "CHECK 4" << std::endl;
-        particles[i] = sf::Vector2i(rnx, rny);  // Ruch
-    }
+
     //std::cout << "CHECK 8" << std::endl;
     // Zamieñ 2(Nowe) na 1(Istniej¹ce)
     for (int x = 0; x < size; x++) {
@@ -84,10 +57,6 @@ int main()
 
     // Zbiorniki
     //std::vector<std::vector<bool>> oil(size, std::vector<bool>(size, false));
-    std::vector<sf::Vector2i> particles(size*2, sf::Vector2i(0, 0));
-    for (int i = 0; i < particles.size(); i++) {
-        particles[i] = GetEdgePos(size);
-    }
     std::vector<std::vector<int>> oilNew(size, std::vector<int>(size, 0));
     oilNew[size / 2][size / 2] = 1;
 
@@ -122,7 +91,7 @@ int main()
         }
         if (!pause) {
             curIteration += 1;
-            StainUpdate(oilNew,particles);
+            StainUpdate(oilNew);
             //pause = true;
         }
         if (iterations == curIteration) {
@@ -148,14 +117,7 @@ int main()
                     //else std::cout << "Nay" << std::endl;
                 }
             }
-            //Rysuje niektóre cz¹stki
-            shape.setFillColor(sf::Color::Green);
-            for (int i = 0; i < particles.size(); i++) {
-                if (i % 25 < 1) {
-                    shape.setPosition(sf::Vector2f(blocksize * particles[i].x, blocksize * particles[i].y));
-                    window.draw(shape);
-                }
-            }
+
             window.display();
         }//*/
     }
